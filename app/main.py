@@ -3,7 +3,6 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Session
 
 from app.database import engine, get_session
-from app import models
 from app.schemas import (
     EmployeeCreate,
     EmployeeRead,
@@ -16,14 +15,16 @@ from app.crud import (
     update_employee,
     delete_employee
 )
+from app.auth import verify_token
 
 app = FastAPI(title="Employee Management API")
 
-
+# ---------------- STARTUP ----------------
 @app.on_event("startup")
 def on_startup():
     SQLModel.metadata.create_all(engine)
 
+# ---------------- EMPLOYEE ROUTES (PROTECTED) ----------------
 
 @app.post(
     "/api/employees/",
@@ -32,7 +33,8 @@ def on_startup():
 )
 def create_emp(
     data: EmployeeCreate,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: str = Depends(verify_token)
 ):
     return create_employee(session, data)
 
@@ -43,18 +45,18 @@ def create_emp(
 )
 def get_employees(
     page: int = 1,
-    size: int = 10,
     department: Optional[str] = None,
     role: Optional[str] = None,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: str = Depends(verify_token)
 ):
     return list_employees(
         session,
         page=page,
-        size=size,
         department=department,
         role=role
     )
+
 
 @app.get(
     "/api/employees/{id}",
@@ -62,7 +64,8 @@ def get_employees(
 )
 def get_employee(
     id: int,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: str = Depends(verify_token)
 ):
     return get_employee_by_id(session, id)
 
@@ -74,7 +77,8 @@ def get_employee(
 def update_emp(
     id: int,
     data: EmployeeUpdate,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: str = Depends(verify_token)
 ):
     return update_employee(session, id, data)
 
@@ -85,6 +89,7 @@ def update_emp(
 )
 def delete_emp(
     id: int,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: str = Depends(verify_token)
 ):
     delete_employee(session, id)
